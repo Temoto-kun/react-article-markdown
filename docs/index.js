@@ -12,6 +12,8 @@ var ReactMarkdown = (function (exports,React) {
         lastHeadingRank: 0,
         parserHeadingRank: 0,
         preserveLineBreaks: false,
+        smartyPants: true,
+        flavor: 'GFM',
     };
 
     const isHeading = (c) => /#/.test(c);
@@ -91,11 +93,11 @@ var ReactMarkdown = (function (exports,React) {
             .replace(/( )( +)/gm, ' ');
     }
 
-    function parse(md, { preserveLineBreaks = false } = {}) {
+    function parse(md, options = { preserveLineBreaks: false, smartyPants: true, flavor: 'GFM' }) {
         const mdClean = cleanMarkdown(md);
         const mdChars = mdClean.split(''); // TODO better way of splitting strings (e.g. multibyte)
 
-        const state = mdChars.reduce(parseReducer, { ...INITIAL_STATE, preserveLineBreaks });
+        const state = mdChars.reduce(parseReducer, { ...INITIAL_STATE, ...options });
 
         return React.createElement(React.Fragment, null, state.children);
     }
