@@ -11,9 +11,13 @@ const INITIAL_STATE = {
     preserveLineBreaks: false,
     smartyPants: true,
     flavor: 'GFM',
+    column: 0,
+    row: 0,
 };
 
-const isHeading = (c) => /#/.test(c);
+const isAtxHeading = (c) => /#/.test(c);
+
+const isBlockquote = (c) => />/.test(c);
 
 const isNewline = (c) => /(\r\n|\r|\n)/.test(c);
 
@@ -21,9 +25,11 @@ const isWhitespace = (c) => /[\t ]/.test(c);
 
 function parseReducer(state = INITIAL_STATE, lookahead, i, chars) {
     const flux = {};
-    const { current, mode, token } = state;
+    const { current, mode, token, row, column } = state;
 
     if (isNewline(lookahead)) {
+        flux.row = row + 1
+        flux.column = 0
         const { children = [] } = state
         // add child
         flux.children = children;
@@ -31,6 +37,10 @@ function parseReducer(state = INITIAL_STATE, lookahead, i, chars) {
             const { parserHeadingRank } = state
             flux.children.push(React.createElement(`h${parserHeadingRank}`, null, token))
             flux.parserHeadingRank = 0
+            flux.token = ''
+            flux.mode = 'PARAGRAPH'
+        } else if (mode === 'BLOCKQUOTE_TEXT') {
+            flux.children.push(React.createElement(`blockquote`, null, token))
             flux.token = ''
             flux.mode = 'PARAGRAPH'
         } else if (isNewline(current)) {
@@ -47,21 +57,38 @@ function parseReducer(state = INITIAL_STATE, lookahead, i, chars) {
                 flux.token = token + ' '
             }
         }
-    } else if (isHeading(lookahead)) {
-        if (mode === 'HEADING_TEXT') {
-            flux.token = token + lookahead
-        } else {
+    } else if (isAtxHeading(lookahead)) {
+        if (column === 0 && (mode === 'PARAGRAPH' || mode === 'HEADING')) {
             const { parserHeadingRank } = state;
 
             flux.mode = 'HEADING';
             flux.parserHeadingRank = parserHeadingRank + 1;
+        } else {
+            flux.token = token + lookahead
         }
-    } else if (mode === 'HEADING' && !isNewline(lookahead)) {
-        flux.mode = 'HEADING_TEXT';
-        if (!isWhitespace(lookahead)) {
+    } else if (isBlockquote(lookahead)) {
+        if (column === 0 && (mode === 'PARAGRAPH' || mode === 'BLOCKQUOTE')) {
+            flux.mode = 'BLOCKQUOTE';
+        } else {
+            flux.token = token + lookahead
+        }
+    } else if (!isNewline(lookahead)) {
+        if (mode === 'HEADING') {
+            flux.mode = 'HEADING_TEXT';
+            if (!isWhitespace(lookahead)) {
+                flux.token = token + lookahead
+            }
+        } else if (mode === 'BLOCKQUOTE') {
+            flux.mode = 'BLOCKQUOTE_TEXT';
+            if (!isWhitespace(lookahead)) {
+                flux.token = token + lookahead
+            }
+        } else {
+            flux.column = column + 1
             flux.token = token + lookahead
         }
     } else {
+        flux.column = column + 1
         flux.token = token + lookahead
     }
 
