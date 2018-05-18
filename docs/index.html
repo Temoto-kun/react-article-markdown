@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-PH">
+<head>
+  <meta charset="UTF-8">
+  <title>React Article Markdown</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<div id="root">
+</div>
+<script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+<script src="index.js"></script>
+<script>
+    const MARKDOWN = `# Hello world #1
+
+## Another heading
+
+Hi there this is the
+same paragraph
+
+How are you
+
+# test #2
+
+Another paragraph
+that [breaks](https://www.facebook.com) into
+multiple lines yet
+run as a single unit
+`
+    const APP = window.React.createElement(window.React.Fragment, null, [
+        window.ReactMarkdown.parse(MARKDOWN)
+    ])
+    const ROOT = window.document.getElementById('root')
+    window.ReactDOM.render(APP, ROOT)
+</script>
+</body>
+</html>
