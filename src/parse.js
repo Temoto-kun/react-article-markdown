@@ -1,4 +1,9 @@
 import React from 'react';
+import {
+    Blockquote,
+    Heading,
+    Paragraph,
+} from './elements/index';
 
 const INITIAL_STATE = {
     current: null,
@@ -35,17 +40,17 @@ function parseReducer(state = INITIAL_STATE, lookahead, i, chars) {
         flux.children = children;
         if (mode === 'HEADING_TEXT') {
             const { parserHeadingRank } = state
-            flux.children.push(React.createElement(`h${parserHeadingRank}`, null, token))
+            flux.children.push(new Heading({ children: token, level: parserHeadingRank, }))
             flux.parserHeadingRank = 0
             flux.token = ''
             flux.mode = 'PARAGRAPH'
         } else if (mode === 'BLOCKQUOTE_TEXT') {
-            flux.children.push(React.createElement(`blockquote`, null, token))
+            flux.children.push(new Blockquote({ children: token }))
             flux.token = ''
             flux.mode = 'PARAGRAPH'
         } else if (isNewline(current)) {
             if (token.length > 0) {
-                flux.children.push(React.createElement('p', null, token))
+                flux.children.push(new Paragraph({ children: token }))
             }
             flux.token = ''
             flux.mode = 'PARAGRAPH'
@@ -100,16 +105,18 @@ function parseReducer(state = INITIAL_STATE, lookahead, i, chars) {
         flux.children = children;
         if (mode === 'HEADING_TEXT') {
             const { parserHeadingRank } = state
-            flux.children.push(React.createElement(`h${parserHeadingRank}`, null, token + lookahead))
+            flux.children.push(new Heading({ children: token + lookahead, level: parserHeadingRank, }))
+        } else if (mode === 'BLOCKQUOTE_TEXT') {
+            flux.children.push(new Blockquote({ children: token + lookahead }))
         } else {
-            flux.children.push(React.createElement('p', null, token + lookahead))
+            flux.children.push(new Paragraph({ children: token + lookahead }))
         }
     }
 
     return { ...state, ...flux, };
 }
 
-function cleanMarkdown(md) {
+function collapseWhitespace(md) {
     return md
         .trim()
         .replace(/(\r\n|\r|\n)(\r\n|\r|\n)+/gm, '\n\n')
@@ -118,7 +125,7 @@ function cleanMarkdown(md) {
 }
 
 function parse(md, options = { preserveLineBreaks: false, smartyPants: true, flavor: 'GFM' }) {
-    const mdClean = cleanMarkdown(md);
+    const mdClean = collapseWhitespace(md);
     const mdChars = mdClean.split(''); // TODO better way of splitting strings (e.g. multibyte)
 
     const state = mdChars.reduce(parseReducer, { ...INITIAL_STATE, ...options });
